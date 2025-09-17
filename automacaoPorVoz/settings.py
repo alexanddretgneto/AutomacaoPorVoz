@@ -64,6 +64,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 dias
+
 ROOT_URLCONF = 'automacaoPorVoz.urls'
 
 TEMPLATES = [
@@ -107,6 +109,7 @@ STATIC_URL = '/static/'
 # Django REST Framework: usamos TokenAuthentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -114,7 +117,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',  # só para teste
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+        #'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # isso habilita o formulário HTML
     ]
 }

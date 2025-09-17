@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Automação por Voz</title>
+</head>
+<body>
+  <h1>Automação por Voz</h1>
+  <p>Grave um comando de voz no formato:</p>
+  <pre>aluno: alex neto, ano: 2°, notas: 5.0, 6.0, 7.0, frequencia: 80</pre>
+
+  <button id="startBtn">🎤 Gravar</button>
+  <button id="stopBtn">🛑 Parar</button>
+  <button id="saveBtn">💾 Salvar</button>
+
+  <p><strong>Texto capturado:</strong></p>
+  <textarea id="output" rows="5" cols="50"></textarea>
+
+  <script>
+    let recognition;
+    let finalTranscript = "";
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          let transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+          } else {
+            interim += transcript;
+          }
+        }
+        document.getElementById("output").value = finalTranscript + interim;
+      };
+    } else {
+      alert("Seu navegador não suporta reconhecimento de voz.");
+    }
+
+    document.getElementById("startBtn").onclick = () => recognition.start();
+    document.getElementById("stopBtn").onclick = () => recognition.stop();
+
+    document.getElementById("saveBtn").onclick = async () => {
+      const comando = document.getElementById("output").value;
+      const token = localStorage.getItem("authToken"); // precisa estar logado
+
+      const resp = await fetch("/api/automacao/adicionar/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Token " + token
+        },
+        body: JSON.stringify({ comando })
+      });
+
+      const data = await resp.json();
+      alert("Resposta: " + JSON.stringify(data));
+    };
+  </script>
+</body>
+</html>
