@@ -27,8 +27,11 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'chave_temporaria_para_desenvol
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = False
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-ALLOWED_HOSTS = []
+#DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+#ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = True
 
 
 # Application definition
@@ -46,8 +49,10 @@ INSTALLED_APPS = [
 
     # nosso app
     'contas',
+    'automacao',
 
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -106,7 +111,12 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',  # só para teste
     ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # isso habilita o formulário HTML
+    ]
 }
 
 

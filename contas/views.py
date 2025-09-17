@@ -3,23 +3,32 @@ from rest_framework import status, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import generics
 
 from .serializers import RegisterSerializer
 from django.contrib.auth.models import User
 
-class RegisterView(APIView):
-    permission_classes = [permissions.AllowAny]
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]  # 🔑 importante!
 
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({
-                'username': user.username,
-                'token': token.key
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        user = serializer.save()
+        Token.objects.get_or_create(user=user)
+
+#class RegisterView(APIView):
+ #   permission_classes = [permissions.AllowAny]
+#
+ #   def post(self, request):
+  #      serializer = RegisterSerializer(data=request.data)
+   #     if serializer.is_valid():
+    #        user = serializer.save()
+     #       token, _ = Token.objects.get_or_create(user=user)
+      #      return Response({
+       #         'username': user.username,
+        #        'token': token.key
+         #   }, status=status.HTTP_201_CREATED)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
