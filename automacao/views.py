@@ -8,12 +8,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
 from .models import Aluno
 from .serializers import AlunoSerializer
+from pathlib import Path
 
+JSON_FILE = Path(__file__).resolve().parent / "registros_voz.json"
+@permission_classes([IsAuthenticated])
 # ----------------------------
 # View raiz /api/automacao/ com HTML
 # ----------------------------
 class AutomacaoRootView(APIView):
-    permission_classes = [IsAuthenticated]
+   # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
@@ -40,38 +43,54 @@ class AutomacaoRootView(APIView):
 # Endpoint POST único para adicionar aluno
 # ----------------------------
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def adicionar_aluno(request):
     """
-    Recebe comando de voz convertido para texto e cria um aluno no banco.
-    Exemplo de comando:
-    "aluno: alex neto, ano: 2°, notas: 5.0, 6.0, 7.0, frequencia: 80"
+    Recebe comando de voz convertido para texto e cria um aluno no banco
+    e salva em JSON (apenas nome, ano e notas).
     """
     comando = request.data.get('comando', '').strip()
     if not comando:
         return Response({"erro": "Nenhum comando enviado"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Regex para extrair os dados
+        # Regex simplificada: pega apenas nome, ano e notas
         pattern = (
             r"aluno:\s*(?P<nome>.*?),\s*"
             r"ano:\s*(?P<ano>.*?),\s*"
-            r"notas:\s*(?P<notas>[\d.,\s]+),\s*"
-            r"frequencia:\s*(?P<freq>[\d.]+)"
+            r"notas:\s*(?P<notas>[\d.,\s]+)"
         )
         match = re.match(pattern, comando, re.IGNORECASE)
         if not match:
-            return Response({"erro": "Formato do comando inválido"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"erro": "Formato do comando inválido. Use: aluno: NOME, ano: ANO, notas: 5.0, 6.0"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
 
         nome = match.group('nome').strip()
         ano = match.group('ano').strip()
         notas = [float(n.strip()) for n in match.group('notas').split(',')]
-        frequencia = float(match.group('freq'))
 
-        # Cria aluno
-        aluno = Aluno.objects.create(nome=nome, ano=ano, notas=notas, frequencia=frequencia)
+        # Cria objeto no banco
+        aluno = Aluno.objects.create(nome=nome, ano=ano, notas=notas)
         serializer = AlunoSerializer(aluno)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # Salva no arquivo JSON
+        registro = {
+            "nome": nome,
+            "ano": ano,
+            "notas": notas
+        }
+
+        if JSON_FILE.exists():
+            with open(JSON_FILE, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+        else:
+            dados = []
+
+        dados.append(registro)
+
+        with open(JSON_FILE, "w", encoding="utf-8") as f:
+            json.dump(dados, f, ensure_ascii=False, indent=4)
+
+        return Response(registro, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({"erro": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -46,21 +46,51 @@
     document.getElementById("stopBtn").onclick = () => recognition.stop();
 
     document.getElementById("saveBtn").onclick = async () => {
-      const comando = document.getElementById("output").value;
-      const token = localStorage.getItem("authToken"); // precisa estar logado
+  const comando = document.getElementById("output").value.trim();
+  if (!comando) {
+    alert("❌ Nenhum comando para enviar!");
+    return;
+  }
 
-      const resp = await fetch("/api/automacao/adicionar/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Token " + token
-        },
-        body: JSON.stringify({ comando })
-      });
+  // Pega CSRF token do cookie (Django coloca automaticamente)
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 
-      const data = await resp.json();
-      alert("Resposta: " + JSON.stringify(data));
-    };
+  const csrftoken = getCookie("csrftoken");
+
+  try {
+    const resp = await fetch("/api/automacao/adicionar/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken  // envia token CSRF
+      },
+      body: JSON.stringify({ comando }),
+      credentials: "include"      // envia cookies da sessão
+    });
+
+    const data = await resp.json();
+    if (resp.status === 201) {
+      alert("✅ Registro salvo com sucesso: " + JSON.stringify(data));
+    } else {
+      alert("⚠️ Erro ao salvar: " + JSON.stringify(data));
+    }
+  } catch (error) {
+    alert("❌ Erro ao conectar com a API: " + error);
+  }
+};
   </script>
 </body>
 </html>
